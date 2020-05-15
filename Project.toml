@@ -1,5 +1,18 @@
+name = "COSMA"
+uuid = "ff1143b4-0d7b-4ff9-a09e-db965c574e12"
+authors = ["Harmen Stoppels <me@harmenstoppels.nl>"]
+version = "0.1.0"
+
 [deps]
 Distributed = "8ba89e20-285c-5b6f-9357-94700520ee1b"
 DistributedArrays = "aaf54ef3-cdf8-58ed-94cc-d582ad619b94"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 MPIClusterManagers = "e7922434-ae4b-11e9-05c5-9780451d2c66"
+
+[extras]
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
