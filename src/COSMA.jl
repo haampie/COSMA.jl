@@ -18,90 +18,113 @@ function use_manager(manager::MPIManager)
     mpimanager[] = manager
 end
 
-struct Layout{T}
-    rowblocks::Cint
-    colblocks::Cint
-    rowsplit::Vector{Cint}
-    colsplit::Vector{Cint}
-    owners::Vector{Cint}
-    nlocalblock::Cint
-    localblock_data::Vector{Ptr{T}}
-    localblock_ld::Vector{Cint}
-    localblock_row::Vector{Cint}
-    localblock_col::Vector{Cint}
+struct DArrayWithMPIRanks{T,TA,TB}
+    array::TA
+    ranks::TB
 end
 
-"""
-Convert a DArray data type to something COSMA accepts
-"""
-function Layout(A::DMatrix{T}, owners_, rank) where {T<:BlasFloat}
-    rowblocks = Cint(size(A.pids, 1))
-    colblocks = Cint(size(A.pids, 2))
-    rowsplit = map(i -> Cint(i - 1), A.cuts[1])
-    colsplit = map(i -> Cint(i - 1), A.cuts[2])
-    owners = map(Cint, owners_)
-    
-    nlocalblock = Cint(1)
-    localblock_data = [pointer(localpart(A))]
-    localblock_ld = [stride(localpart(A), 2)]
+function DArrayWithMPIRanks(D::DArray{T}) where T
+    ranks = map(pid -> mpimanager[].j2mpi[pid], D.pids)
 
-    # Get the blocks we own
-    indices = findall(i -> i == rank, owners)
-    localblock_row = map(index -> Cint(index.I[1] - 1), indices)
-    localblock_col = map(index -> Cint(index.I[2] - 1), indices)
-
-    return Layout{T}(
-        rowblocks,
-        colblocks,
-        rowsplit,
-        colsplit,
-        vec(owners),
-        nlocalblock,
-        localblock_data,
-        localblock_ld,
-        localblock_row,
-        localblock_col
-    )
+    return DArrayWithMPIRanks{T,typeof(D),typeof(ranks)}(D, ranks)
 end
-
-distribution_ranks(D::DArray) = map(pid -> mpimanager[].j2mpi[pid], D.pids)
 
 # Here we could add an underscore for fortran bindings if necessary
 macro cosmafunc(x)
     return Expr(:quote, x)
 end
 
-for (fname, elty) in ((:dmultiply,:Float64),
-                      (:smultiply,:Float32),
-                      (:zmultiply,:ComplexF64),
-                      (:cmultiply,:ComplexF32))
+struct Block
+    data::Ptr{Nothing}
+    ld::Cint
+    row::Cint
+    col::Cint
+end
+
+struct JuliaLayout
+    rowblocks::Cint
+    colblocks::Cint
+    rowsplit::Vector{Cint}
+    colsplit::Vector{Cint}
+    owners::Vector{Cint}
+    nlocalblocks::Cint
+    localblocks::Vector{Block}
+end
+
+function JuliaLayout(A::DArrayWithMPIRanks{T}, rank) where T
+    rowblocks = Cint(size(A.ranks, 1))
+    colblocks = Cint(size(A.ranks, 2))
+    rowsplit = map(i -> Cint(i - 1), A.array.cuts[1])
+    colsplit = map(i -> Cint(i - 1), A.array.cuts[2])
+    owners = map(Cint, A.ranks)
+
+    # Get the blocks we own
+    indices = findall(i -> i == rank, owners)
+    @assert length(indices) == 1 # should be enforced by DArray
+    block_row, block_col = Cint.(first(indices).I .- 1)
+    
+    localblocks = Block(
+        Base.unsafe_convert(Ptr{Cvoid}, pointer(localpart(A.array))),
+        stride(localpart(A.array), 2),
+        block_row,
+        block_col
+    )
+
+    return JuliaLayout(rowblocks, colblocks, rowsplit, colsplit, vec(owners), 1, [localblocks])
+end
+
+struct Layout
+    rowblocks::Cint
+    colblocks::Cint
+    rowsplit::Ptr{Cint}
+    colsplit::Ptr{Cint}
+    owners::Ptr{Cint}
+    nlocalblocks::Cint
+    blocks::Ptr{Block}
+end
+
+Layout(A::JuliaLayout) = Layout(
+    A.rowblocks,
+    A.colblocks,
+    pointer(A.rowsplit),
+    pointer(A.colsplit),
+    pointer(A.owners),
+    A.nlocalblocks,
+    pointer(A.localblocks)
+)
+
+for (fname, elty) in ((:dmultiply_using_layout,:Float64),
+                      (:smultiply_using_layout,:Float32),
+                      (:zmultiply_using_layout,:ComplexF64),
+                      (:cmultiply_using_layout,:ComplexF32))
     @eval begin
-        function gemm!(C::Layout, transa::AbstractChar, transb::AbstractChar, A::Layout, B::Layout, alpha::$elty, beta::$elty, comm)
-            @time ccall((@cosmafunc($fname), lib), Cvoid, (
-                MPI.MPI_Comm #= comm =#,
-                Ref{Cchar} #= transa =#,
-                Ref{Cchar} #= transb =#,
-                Ref{$elty} #= alpha =#,
-                Ref{Cint} #= rowblocks_a =#, Ref{Cint} #= colblocks_a =#, Ptr{Cint} #= rowsplit_a =#, Ptr{Cint} #= colsplit_a =#, Ptr{Cint} #= owners_a =#,
-                Ref{Cint} #= nlocalblock_a =#, Ptr{Ptr{$elty}} #= localblock_data_a =#, Ptr{Cint} #= localblock_ld_a =#, Ptr{Cint} #= localblock_row_a =#, Ptr{Cint} #= localblock_col_a =#,
-                Ref{Cint} #= rowblocks_b =#, Ref{Cint} #= colblocks_b =#, Ptr{Cint} #= rowsplit_b =#, Ptr{Cint} #= colsplit_b =#, Ptr{Cint} #= owners_b =#,
-                Ref{Cint} #= nlocalblock_b =#, Ptr{Ptr{$elty}} #= localblock_data_b =#, Ptr{Cint} #= localblock_ld_b =#, Ptr{Cint} #= localblock_row_b =#, Ptr{Cint} #= localblock_col_b =#,
-                Ref{$elty} #= beta =#,
-                Ref{Cint} #= rowblocks_c =#, Ref{Cint} #= colblocks_c =#, Ptr{Cint} #= rowsplit_c =#, Ptr{Cint} #= colsplit_c =#, Ptr{Cint} #= owners_c =#,
-                Ref{Cint} #= nlocalblock_c =#, Ptr{Ptr{$elty}} #= localblock_data_c =#, Ptr{Cint} #= localblock_ld_c =#, Ptr{Cint} #= localblock_row_c =#, Ptr{Cint} #= localblock_col_ =#
-            ),
-                comm,
-                transa,
-                transb,
-                alpha,
-                A.rowblocks, A.colblocks, A.rowsplit, A.colsplit, A.owners,
-                A.nlocalblock, A.localblock_data, A.localblock_ld, A.localblock_row, A.localblock_col,
-                B.rowblocks, B.colblocks, B.rowsplit, B.colsplit, B.owners,
-                B.nlocalblock, B.localblock_data, B.localblock_ld, B.localblock_row, B.localblock_col,
-                beta,
-                C.rowblocks, C.colblocks, C.rowsplit, C.colsplit, C.owners,
-                C.nlocalblock, C.localblock_data, C.localblock_ld, C.localblock_row, C.localblock_col
-            )
+        function gemm!(C::DArrayWithMPIRanks{$elty}, transa::AbstractChar, transb::AbstractChar, A::DArrayWithMPIRanks{$elty}, B::DArrayWithMPIRanks{$elty}, alpha::$elty, beta::$elty)
+            # Get our rank
+            comm = MPI.COMM_WORLD
+            rank = MPI.Comm_rank(comm)
+
+            A_julia = JuliaLayout(A, rank)
+            B_julia = JuliaLayout(B, rank)
+            C_julia = JuliaLayout(C, rank)
+
+            GC.@preserve A_julia B_julia C_julia A B C begin
+                A_cosma = Layout(A_julia)
+                B_cosma = Layout(B_julia)
+                C_cosma = Layout(C_julia)
+
+                ccall((@cosmafunc($fname), lib), Cvoid, (
+                    MPI.MPI_Comm #= comm =#,
+                    Ref{Cchar} #= transa =#,
+                    Ref{Cchar} #= transb =#,
+                    Ref{$elty} #= alpha =#,
+                    Ref{Layout} #= layout_a =#,
+                    Ref{Layout} #= layout_b =#,
+                    Ref{$elty} #= beta =#,
+                    Ref{Layout} #= layout_c =#,
+                ),
+                    comm, transa, transb, alpha, A_cosma, B_cosma, beta, C_cosma
+                )
+            end
         end
     end
 end
@@ -111,23 +134,12 @@ function gemm_wrapper!(C::DMatrix{T}, transa::AbstractChar, transb::AbstractChar
     pids = unique(vcat(vec(C.pids), vec(A.pids), vec(B.pids)))
         
     # Julia pids are not mpi ranks :(
-    owners_A = distribution_ranks(A)
-    owners_B = distribution_ranks(B)
-    owners_C = distribution_ranks(C)
+    A_mpi = DArrayWithMPIRanks(A)
+    B_mpi = DArrayWithMPIRanks(B)
+    C_mpi = DArrayWithMPIRanks(C)
 
     @sync for p in pids
-        @spawnat p begin
-            # Get our rank
-            comm = MPI.COMM_WORLD
-            rank = MPI.Comm_rank(comm)
-
-            # Transform DArray to COSMA-like input
-            A_layout = Layout(A, owners_A, rank)
-            B_layout = Layout(B, owners_B, rank)
-            C_layout = Layout(C, owners_C, rank)
-
-            gemm!(C_layout, transa, transb, A_layout, B_layout, alpha, beta, comm)
-        end
+        @spawnat p gemm!(C_mpi, transa, transb, A_mpi, B_mpi, alpha, beta)
     end
 
     return C
