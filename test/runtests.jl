@@ -13,13 +13,20 @@ let
 
     COSMA.use_manager(manager)
 
-    @testset for f = (identity, transpose, adjoint), g = (identity, transpose, adjoint), T = (Float32, Float64, ComplexF32, ComplexF64)
+    @testset "Incompatible sizes" begin
+        @test_throws DimensionMismatch mul!(drand(6, 6), drand(3, 6), drand(5, 6))
+        @test_throws DimensionMismatch mul!(drand(ComplexF64, 6, 6), drand(ComplexF64, 6, 3)', drand(ComplexF64, 5, 6))
+        @test_throws DimensionMismatch mul!(drand(6, 6), transpose(drand(6, 3)), drand(5, 6))
+        @test_throws DimensionMismatch mul!(drand(4, 3), transpose(drand(3, 3)), drand(3, 3))
+    end
+
+    @testset "C = alpha * $f(A) * $g(B) + beta * C" for f = (identity, transpose, adjoint), g = (identity, transpose, adjoint), T = (Float32, Float64, ComplexF32, ComplexF64)
         # Skip adjoints of real matrices
         if (f == adjoint || g == adjoint) && T <: Real
             continue
         end
 
-        m, n, k = 200, 100, 300
+        m, n, k = 20, 10, 30
 
         alpha = T(2.0)
         beta = T(3.0)

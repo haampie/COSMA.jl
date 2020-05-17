@@ -6,13 +6,11 @@ using DistributedArrays
 using Distributed
 using MPI
 using MPIClusterManagers: MPIManager
+using COSMA_jll: cosma
 
 const DMatrix{T} = DArray{T,2}
 
 const mpimanager = Base.RefValue{Union{Nothing,MPIManager}}(nothing)
-
-# Currently a hard-coded path to the shared lib
-const lib = "/home/harmen/Documents/cscs/COSMA/build/here/usr/local/lib/libcosma.so"
 
 function use_manager(manager::MPIManager)
     mpimanager[] = manager
@@ -112,7 +110,7 @@ for (fname, elty) in ((:dmultiply_using_layout,:Float64),
                 B_cosma = Layout(B_julia)
                 C_cosma = Layout(C_julia)
 
-                ccall((@cosmafunc($fname), lib), Cvoid, (
+                ccall((@cosmafunc($fname), cosma), Cvoid, (
                     MPI.MPI_Comm #= comm =#,
                     Ref{Cchar} #= transa =#,
                     Ref{Cchar} #= transb =#,
@@ -130,9 +128,20 @@ for (fname, elty) in ((:dmultiply_using_layout,:Float64),
 end
 
 function gemm_wrapper!(C::DMatrix{T}, transa::AbstractChar, transb::AbstractChar, A::DMatrix{T}, B::DMatrix{T}, alpha::T, beta::T) where {T<:BlasFloat}
+    Ad1, Ad2 = (transa == 'N') ? (1,2) : (2,1)
+    Bd1, Bd2 = (transb == 'N') ? (1,2) : (2,1)
+    mA, nA = (size(A, Ad1), size(A, Ad2))
+    mB, nB = (size(B, Bd1), size(B, Bd2))
+    if mB != nA
+        throw(DimensionMismatch("matrix A has dimensions ($mA, $nA), matrix B has dimensions ($mB, $nB)"))
+    end
+    if size(C,1) != mA || size(C,2) != nB
+        throw(DimensionMismatch("result C has dimensions $(size(C)), needs ($mA, $nB)"))
+    end
+
     # Get unique workers
     pids = unique(vcat(vec(C.pids), vec(A.pids), vec(B.pids)))
-        
+
     # Julia pids are not mpi ranks :(
     A_mpi = DArrayWithMPIRanks(A)
     B_mpi = DArrayWithMPIRanks(B)
