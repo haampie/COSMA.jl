@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/haampie/COSMA.jl.svg?branch=master)](https://travis-ci.org/haampie/COSMA.jl)
+
 # COSMA.jl communication optimal matrix-matrix multiplication for DistributedArrays.jl over MPI
 
 Usage example:
