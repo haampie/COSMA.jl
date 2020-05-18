@@ -20,7 +20,7 @@ let
         @test_throws DimensionMismatch mul!(drand(4, 3), transpose(drand(3, 3)), drand(3, 3))
     end
 
-    @testset "C = alpha * $f(A) * $g(B) + beta * C" for f = (identity, transpose, adjoint), g = (identity, transpose, adjoint), T = (Float32, Float64, ComplexF32, ComplexF64)
+    @testset "C = alpha * $f(A) * $g(B) + beta * C ($T)" for f = (identity, transpose, adjoint), g = (identity, transpose, adjoint), T = (Float32, Float64, ComplexF32, ComplexF64)
         # Skip adjoints of real matrices
         if (f == adjoint || g == adjoint) && T <: Real
             continue
