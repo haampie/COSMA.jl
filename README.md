@@ -2,7 +2,9 @@
 
 # COSMA.jl communication optimal matrix-matrix multiplication for DistributedArrays.jl over MPI
 
-Usage example:
+COSMA.jl provides wrappers for [eth-cscs/COSMA](https://github.com/eth-cscs/COSMA) to do communication-optimal matrix-matrix multiplication for DArray's of `Float32`, `Float64`, `ComplexF32` and `ComplexF64`.
+
+A typical prerequisite is to use MPIClusterManager to setup some MPI ranks and to load the package everywhere:
 
 ```julia
 using MPIClusterManager, DistributedArrays, Distributed
@@ -12,12 +14,30 @@ addprocs(manager)
 
 @everywhere using COSMA
 
-# Some config for the mapping of Julia's pids to MPI ranks on the host, maybe we can make this automatic later
+# Just on the host we have to configure the mapping of Julia's pids to MPI ranks (hopefully this can be removed in a later release)
 COSMA.use_manager(manager)
+```
 
-C = drand(100, 100)
+Next create some distributed matrices and multiply them:
+
+```julia
+using LinearAlgebra
+
+# Float64 matrices, automatically distributed over the MPI ranks
 A = drand(100, 100)
 B = drand(100, 100)
 
-mul!(C, A, B)
+# Use DistributedArrays to allocate the new matrix C and multiply using COSMA
+C = A * B
+
+# Or allocate your own distributed target matrix C:
+A_complex = drand(ComplexF32, 100, 100)
+B_complex = drand(ComplexF32, 100, 100)
+C_complex = dzeros(ComplexF32, 100, 100)
+
+mul!(C_complex, A_complex, B_complex)
 ```
+
+## Notes about Julia's DArray type
+
+COSMA supports Julia's DArray matrix distribution perfectly, and is in fact more powerful: Julia's DArray supports only a single local block per MPI rank, whereas COSMA supports an arbitrary number of them.
