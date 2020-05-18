@@ -2,7 +2,7 @@
 
 # COSMA.jl communication optimal matrix-matrix multiplication for DistributedArrays.jl over MPI
 
-COSMA.jl provides wrappers for [eth-cscs/COSMA](https://github.com/eth-cscs/COSMA) to do communication-optimal matrix-matrix multiplication for DArray's of `Float32`, `Float64`, `ComplexF32` and `ComplexF64`.
+COSMA.jl provides wrappers for [eth-cscs/COSMA](https://github.com/eth-cscs/COSMA) to do communication-optimal matrix-matrix multiplication for DArray's of element types `Float32`, `Float64`, `ComplexF32` and `ComplexF64`.
 
 A typical prerequisite is to use MPIClusterManager to setup some MPI ranks and to load the package everywhere:
 
