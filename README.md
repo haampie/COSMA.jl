@@ -8,7 +8,7 @@ Install via the package manager
 
 ```julia
 using Pkg
-Pkg.add("https://github.com/haampie/COSMA.jl.git")
+Pkg.add("COSMA")
 ```
 
 A typical prerequisite is to use MPIClusterManager to setup some MPI ranks and to load the package everywhere:
