@@ -4,6 +4,13 @@
 
 COSMA.jl provides wrappers for [eth-cscs/COSMA](https://github.com/eth-cscs/COSMA) to do communication-optimal matrix-matrix multiplication for DArray's of element types `Float32`, `Float64`, `ComplexF32` and `ComplexF64`.
 
+Install via the package manager
+
+```julia
+using Pkg
+Pkg.add("https://github.com/haampie/COSMA.jl.git")
+```
+
 A typical prerequisite is to use MPIClusterManager to setup some MPI ranks and to load the package everywhere:
 
 ```julia
@@ -37,6 +44,10 @@ C_complex = dzeros(ComplexF32, 100, 100)
 
 mul!(C_complex, A_complex, B_complex)
 ```
+
+## Using a custom MPI implementation
+
+COSMA.jl depends on MPI.jl, which ships MPICH as a default MPI library. If you need a system-specific version, see the instructions from the [docs of MPI.jl](https://juliaparallel.github.io/MPI.jl/latest/configuration/).
 
 ## Notes about Julia's DArray type
 
