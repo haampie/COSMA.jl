@@ -1,7 +1,7 @@
 name = "COSMA"
 uuid = "ff1143b4-0d7b-4ff9-a09e-db965c574e12"
 authors = ["Harmen Stoppels <me@harmenstoppels.nl>"]
-version = "0.1.0"
+version = "0.1.1"
 
 [deps]
 COSMA_jll = "0efae8bf-39e6-5d65-b05d-c8947f4cee2a"
