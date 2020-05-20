@@ -162,30 +162,30 @@ end
 # Pirate the mul! implementation
 mul!(C::DMatrix{T}, A::DMatrix{T}, B::DMatrix{T}, a::Number, b::Number) where T<:BlasFloat = 
     gemm_wrapper!(C, 'N', 'N', A, B, promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, trA::Transpose{<:Any, <:DMatrix{T}}, B::DMatrix{T}, a::Number, b::Number) where T<:BlasFloat =
+mul!(C::DMatrix{T}, trA::Transpose{T, <:DMatrix{T}}, B::DMatrix{T}, a::Number, b::Number) where T<:BlasFloat =
     gemm_wrapper!(C, 'T', 'N', parent(trA), B, promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, A::DMatrix{T}, trB::Transpose{<:Any, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasFloat =
+mul!(C::DMatrix{T}, A::DMatrix{T}, trB::Transpose{T, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasFloat =
     gemm_wrapper!(C, 'N', 'T', A, parent(trB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, trA::Transpose{<:Any, <:DMatrix{T}}, trB::Transpose{<:Any, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasFloat =
+mul!(C::DMatrix{T}, trA::Transpose{T, <:DMatrix{T}}, trB::Transpose{T, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasFloat =
     gemm_wrapper!(C, 'T', 'T', parent(trA), parent(trB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, adjA::Adjoint{<:Any, <:DMatrix{T}}, B::DMatrix{T}, a::Real, b::Real) where T<:BlasReal =
+mul!(C::DMatrix{T}, adjA::Adjoint{T, <:DMatrix{T}}, B::DMatrix{T}, a::Real, b::Real) where T<:BlasReal =
     gemm_wrapper!(C, 'T', 'N', parent(adjA), B, promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, adjA::Adjoint{<:Any, <:DMatrix{T}}, B::DMatrix{T}, a::Number, b::Number) where T<:BlasComplex =
+mul!(C::DMatrix{T}, adjA::Adjoint{T, <:DMatrix{T}}, B::DMatrix{T}, a::Number, b::Number) where T<:BlasComplex =
     gemm_wrapper!(C, 'C', 'N', parent(adjA), B, promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, A::DMatrix{T}, adjB::Adjoint{<:Any, <:DMatrix{T}}, a::Real, b::Real) where T<:BlasReal =
+mul!(C::DMatrix{T}, A::DMatrix{T}, adjB::Adjoint{T, <:DMatrix{T}}, a::Real, b::Real) where T<:BlasReal =
     gemm_wrapper!(C, 'N', 'T', A, parent(adjB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, A::DMatrix{T}, adjB::Adjoint{<:Any, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasComplex =
+mul!(C::DMatrix{T}, A::DMatrix{T}, adjB::Adjoint{T, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasComplex =
     gemm_wrapper!(C, 'N', 'C', A, parent(adjB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, adjA::Adjoint{<:Any, <:DMatrix{T}}, adjB::Adjoint{<:Any, <:DMatrix{T}}, a::Real, b::Real) where T<:BlasReal =
+mul!(C::DMatrix{T}, adjA::Adjoint{T, <:DMatrix{T}}, adjB::Adjoint{T, <:DMatrix{T}}, a::Real, b::Real) where T<:BlasReal =
     gemm_wrapper!(C, 'T', 'T', parent(adjA), parent(adjB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, adjA::Adjoint{<:Any, <:DMatrix{T}}, adjB::Adjoint{<:Any, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasComplex =
+mul!(C::DMatrix{T}, adjA::Adjoint{T, <:DMatrix{T}}, adjB::Adjoint{T, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasComplex =
     gemm_wrapper!(C, 'C', 'C', parent(adjA), parent(adjB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, trA::Transpose{<:Any, <:DMatrix{T}}, adjB::Adjoint{T, <:DMatrix{T}}, a::Real, b::Real) where T<:BlasReal =
+mul!(C::DMatrix{T}, trA::Transpose{T, <:DMatrix{T}}, adjB::Adjoint{T, <:DMatrix{T}}, a::Real, b::Real) where T<:BlasReal =
     gemm_wrapper!(C, 'T', 'T', parent(trA), parent(adjB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, trA::Transpose{<:Any, <:DMatrix{T}}, adjB::Adjoint{<:Any, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasComplex =
+mul!(C::DMatrix{T}, trA::Transpose{T, <:DMatrix{T}}, adjB::Adjoint{T, <:DMatrix{T}}, a::Number, b::Number) where T<:BlasComplex =
     gemm_wrapper!(C, 'T', 'C', parent(trA), parent(adjB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, adjA::Adjoint{T, <:DMatrix{T}}, trB::Transpose{<:Any, <:DMatrix{T}}, a::Real, b::Real) where T<:BlasReal =
+mul!(C::DMatrix{T}, adjA::Adjoint{T, <:DMatrix{T}}, trB::Transpose{T, <:DMatrix{T}}, a::Real, b::Real) where T<:BlasReal =
     gemm_wrapper!(C, 'T', 'T', parent(adjA), parent(trB), promote_alpha_beta(a, b, T)...)
-mul!(C::DMatrix{T}, adjA::Adjoint{<:Any, <:DMatrix{T}}, trB::Transpose{<:Any, <:DMatrix{T}}, a::Number, b::Number) where T <: BlasComplex =
+mul!(C::DMatrix{T}, adjA::Adjoint{T, <:DMatrix{T}}, trB::Transpose{T, <:DMatrix{T}}, a::Number, b::Number) where T <: BlasComplex =
     gemm_wrapper!(C, 'C', 'T', parent(adjA), parent(trB), promote_alpha_beta(a, b, T)...)
 end

@@ -14,7 +14,7 @@ Pkg.add("COSMA")
 A typical prerequisite is to use MPIClusterManager to setup some MPI ranks and to load the package everywhere:
 
 ```julia
-using MPIClusterManager, DistributedArrays, Distributed
+using MPIClusterManagers, DistributedArrays, Distributed
 
 manager = MPIManager(np = 6)
 addprocs(manager)
