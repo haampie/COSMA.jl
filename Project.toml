@@ -12,10 +12,10 @@ MPI = "da04e1cc-30fd-572f-bb4f-1f8673147195"
 MPIClusterManagers = "e7922434-ae4b-11e9-05c5-9780451d2c66"
 
 [compat]
-julia = "1"
 DistributedArrays = "0.6"
-MPI = "0.14"
+MPI = "0.14, 0.15"
 MPIClusterManagers = "0.2"
+julia = "1"
 
 [extras]
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
